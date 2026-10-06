@@ -61,51 +61,18 @@ const NAV=[
 ];
 const DEFAULT_STATE={
  theme:'light',currency:'USD',currentPage:'dashboard',
- accounts:[
-  {id:1,name:'Primary Checking',type:'Checking',institution:'Chase',last4:'4821',balance:6412.18},
-  {id:2,name:'Savings',type:'Savings',institution:'Ally',last4:'1094',balance:2530.00},
-  {id:3,name:'Sapphire Card',type:'Credit Card',institution:'Chase',last4:'7731',balance:-1248.72},
-  {id:4,name:'Investments',type:'Investment',institution:'Fidelity',last4:'',balance:34986.78}
- ],
- transactions:[
-  {id:101,merchant:'Walmart',category:'Shopping',date:'2026-10-06',amount:-86.42,accountId:1,note:''},
-  {id:102,merchant:'Disney+',category:'Entertainment',date:'2026-10-05',amount:-15.99,accountId:3,note:'Subscription'},
-  {id:103,merchant:'Paycheck',category:'Income',date:'2026-10-03',amount:1842.20,accountId:1,note:'Paycheck'},
-  {id:104,merchant:"Casey's",category:'Transportation',date:'2026-10-02',amount:-54.18,accountId:1,note:''},
-  {id:105,merchant:'Chick-fil-A',category:'Food',date:'2026-10-01',amount:-18.74,accountId:3,note:''},
-  {id:106,merchant:'Mortgage',category:'Housing',date:'2026-09-30',amount:-1240,accountId:1,note:'Monthly mortgage'},
-  {id:107,merchant:'Gas & Electric',category:'Housing',date:'2026-09-29',amount:-142.51,accountId:1,note:''},
-  {id:108,merchant:'Target',category:'Shopping',date:'2026-09-28',amount:-92.17,accountId:3,note:''},
-  {id:109,merchant:'Fuel',category:'Transportation',date:'2026-09-27',amount:-48.25,accountId:1,note:''},
-  {id:110,merchant:'Disney Cruise',category:'Travel',date:'2026-09-25',amount:-412.30,accountId:3,note:''}
- ],
- budgets:[
-  {id:201,category:'Housing',limit:1300},
-  {id:202,category:'Food',limit:550},
-  {id:203,category:'Transportation',limit:400},
-  {id:204,category:'Fun',limit:250},
-  {id:205,category:'Shopping',limit:350},
-  {id:206,category:'Travel',limit:300}
- ],
- goals:[
-  {id:301,name:'Vacation',emoji:'🏖️',target:3000,saved:1840,targetDate:'2027-06-01'},
-  {id:302,name:'Emergency Fund',emoji:'🚨',target:10000,saved:7250,targetDate:'2027-12-31'},
-  {id:303,name:'House',emoji:'🏠',target:25000,saved:12400,targetDate:'2029-01-01'}
- ],
- bills:[
-  {id:401,name:'Mortgage',amount:1240,dueDay:8,category:'Housing',accountId:1,recurring:true},
-  {id:402,name:'Car payment',amount:575,dueDay:10,category:'Transportation',accountId:1,recurring:true},
-  {id:403,name:'Internet',amount:79.99,dueDay:12,category:'Utilities',accountId:1,recurring:true},
-  {id:404,name:'Disney+',amount:15.99,dueDay:14,category:'Entertainment',accountId:3,recurring:true},
-  {id:405,name:'Phone',amount:112.42,dueDay:16,category:'Utilities',accountId:1,recurring:true}
- ]
+ accounts:[],
+ transactions:[],
+ budgets:[],
+ goals:[],
+ bills:[]
 };
 let state=loadState();
 let activeFilters={query:'',category:'All',month:monthKey(new Date())};
 const $=sel=>document.querySelector(sel);
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function loadState(){try{const raw=localStorage.getItem('finpilot-v2');return raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE)}catch{return clone(DEFAULT_STATE)}}
-function save(){localStorage.setItem('finpilot-v2',JSON.stringify(state));applyTheme();}
+function loadState(){try{const raw=localStorage.getItem('finpilot-v3');return raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE)}catch{return clone(DEFAULT_STATE)}}
+function save(){localStorage.setItem('finpilot-v3',JSON.stringify(state));applyTheme();}
 function fmt(n){const sign=n<0?'-$':'$';return sign+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtSigned(n){return n>0?'+'+fmt(n):fmt(n)}
 function dateLabel(date){const d=new Date(date+'T12:00:00'); const today=new Date(); const y=d.getFullYear(),m=d.getMonth(),day=d.getDate(); if(y===today.getFullYear()&&m===today.getMonth()&&day===today.getDate()) return 'Today'; const yest=new Date(today); yest.setDate(today.getDate()-1); if(y===yest.getFullYear()&&m===yest.getMonth()&&day===yest.getDate()) return 'Yesterday'; return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:y!==today.getFullYear()?'numeric':undefined})}
@@ -179,7 +146,7 @@ function renderNetworth(){const t=totals();$('#page-networth').innerHTML=topbar(
  <div class="grid-2"><div class="card"><h2 class="section-title">Account breakdown</h2>${state.accounts.map(a=>`<div class="row"><div class="left"><div class="icon-box">${a.type==='Investment'?'📈':a.type==='Credit Card'?'💳':'🏦'}</div><div><div class="merchant">${esc(a.name)}</div><div class="subtext">${esc(a.type)} · ${esc(a.institution||'Manual')}</div></div></div><div class="amount ${a.balance>=0?'income':'expense'}">${fmt(a.balance)}</div></div>`).join('')}</div><div class="card"><h2 class="section-title">6-month trend</h2><div class="chart-wrap"><canvas id="nwChart"></canvas></div><div class="chart-legend"><span>Illustrative history based on tracked balance</span></div></div></div>`;drawNetworth();}
 function renderSettings(){$('#page-settings').innerHTML=topbar('Settings','Make FinPilot work the way you want.',`<button class="btn" onclick="backupJSON()">Backup JSON</button><button class="btn primary" onclick="$('#importFile').click()">Import</button>`)+
  `<div class="settings-grid"><div class="card"><h2 class="section-title">Preferences</h2><div class="row"><div><b>Dark mode</b><div class="subtext">Switch the app theme</div></div><label class="switch"><input id="themeToggle" type="checkbox" ${state.theme==='dark'?'checked':''}><span class="slider"></span></label></div><div class="row"><div><b>Currency</b><div class="subtext">Used across the dashboard</div></div><select id="currency" class="field" style="width:120px"><option value="USD" selected>USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></div></div>
- <div class="card"><h2 class="section-title">Data</h2><div class="kpi-line"><span>Accounts</span><b>${state.accounts.length}</b></div><div class="kpi-line"><span>Transactions</span><b>${state.transactions.length}</b></div><div class="kpi-line"><span>Budget categories</span><b>${state.budgets.length}</b></div><div class="kpi-line"><span>Goals</span><b>${state.goals.length}</b></div><div class="kpi-line"><span>Recurring bills</span><b>${state.bills.length}</b></div><div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="$('#importFile').click()">Import backup</button><button class="btn" onclick="backupJSON()">Export backup</button><button class="btn danger" onclick="resetData()">Reset sample data</button></div></div></div>
+ <div class="card"><h2 class="section-title">Data</h2><div class="kpi-line"><span>Accounts</span><b>${state.accounts.length}</b></div><div class="kpi-line"><span>Transactions</span><b>${state.transactions.length}</b></div><div class="kpi-line"><span>Budget categories</span><b>${state.budgets.length}</b></div><div class="kpi-line"><span>Goals</span><b>${state.goals.length}</b></div><div class="kpi-line"><span>Recurring bills</span><b>${state.bills.length}</b></div><div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="$('#importFile').click()">Import backup</button><button class="btn" onclick="backupJSON()">Export backup</button><button class="btn danger" onclick="resetData()">Reset all data</button></div></div></div>
  <div class="card" style="margin-top:16px"><h2 class="section-title">About FinPilot</h2><p class="muted small">This version is a local-first personal finance app. Accounts, transactions, budgets, goals and bills are stored in your browser on this device. No bank login is required.</p><p class="muted small">For security, do not enter bank passwords or sensitive credentials into FinPilot.</p></div>`;$('#themeToggle').onchange=e=>{state.theme=e.target.checked?'dark':'light';save();};$('#currency').value=state.currency;$('#currency').onchange=e=>{state.currency=e.target.value;save();render();}}
 
 function drawCashFlow(){const c=$('#cashFlowChart');if(!c)return;fitCanvas(c);const ctx=c.getContext('2d');const rect=c.getBoundingClientRect();const w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);const days=30, income=Array(days).fill(0), spend=Array(days).fill(0);const now=new Date();state.transactions.filter(t=>t.date.startsWith(monthKey(now))).forEach(t=>{const d=new Date(t.date+'T12:00:00').getDate()-1;if(d>=0&&d<days)(t.amount>0?income:spend)[d]+=Math.abs(t.amount)});const max=Math.max(100,...income,...spend);chartBars(ctx,w,h,[income,spend],max);}
@@ -209,7 +176,7 @@ function backupJSON(){downloadText('finpilot-backup.json',JSON.stringify(state,n
 function downloadText(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
 $('#importFile').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const raw=String(reader.result||'');if(/\.csv$/i.test(file.name)){const lines=raw.split(/\r?\n/).filter(Boolean);const rows=lines.slice(1).map(parseCSVLine);if(!rows.length)throw new Error('Empty CSV');rows.forEach(r=>{const [date,merchant,category,account,amount,note]=r;const acct=state.accounts.find(a=>(a.name||'').toLowerCase()===(account||'').toLowerCase())||state.accounts[0];state.transactions.push({id:Date.now()+Math.random(),date:date||new Date().toISOString().slice(0,10),merchant:merchant||'Imported',category:category||'Other',accountId:acct?.id||null,amount:Number(String(amount||0).replace(/[$,]/g,''))||0,note:note||''})});save();toast(`${rows.length} transactions imported`);render();return}const parsed=JSON.parse(raw);if(!parsed.accounts||!parsed.transactions)throw new Error('Invalid backup');state={...clone(DEFAULT_STATE),...parsed,currentPage:state.currentPage};save();toast('Backup imported');render()}catch(err){alert('Could not import that file. Use a FinPilot JSON backup or a CSV exported from FinPilot.')}e.target.value=''};reader.readAsText(file)})
 function parseCSVLine(line){const out=[];let cur='',quoted=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){cur+='"';i++}else quoted=!quoted}else if(ch===','&&!quoted){out.push(cur);cur=''}else cur+=ch}out.push(cur);return out}
-function resetData(){if(!confirm('Reset FinPilot to its sample data? Your current local data will be replaced.'))return;state=clone(DEFAULT_STATE);save();toast('Sample data restored');render()}
+function resetData(){if(!confirm('Reset FinPilot to a completely blank account? This will permanently remove all accounts, transactions, budgets, goals, and bills stored on this device.'))return;state=clone(DEFAULT_STATE);save();toast('FinPilot reset to blank');render()}
 window.addEventListener('resize',()=>{if(state.currentPage==='dashboard')drawCashFlow();if(state.currentPage==='networth')drawNetworth()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 render();
