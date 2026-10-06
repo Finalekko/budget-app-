@@ -74,8 +74,8 @@ let state=loadState();
 let activeFilters={query:'',category:'All'};
 const $=sel=>document.querySelector(sel);
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function loadState(){try{const raw=localStorage.getItem('finpilot-v45');const loaded=raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE);loaded.paychecks=(loaded.paychecks||[]).map(p=>({...p, billIds:p.billIds||[], allocations:p.allocations||[]}));loaded.bills=(loaded.bills||[]).map(b=>({...b,frequency:b.frequency||'month',startDate:b.startDate||dateKey(new Date())}));loaded.goals=loaded.goals||[];return loaded}catch{return clone(DEFAULT_STATE)}}
-function save(){localStorage.setItem('finpilot-v45',JSON.stringify(state));applyTheme();}
+function loadState(){try{const raw=localStorage.getItem('finpilot-v46');const loaded=raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE);loaded.paychecks=(loaded.paychecks||[]).map(p=>({...p, billIds:p.billIds||[], allocations:p.allocations||[]}));loaded.bills=(loaded.bills||[]).map(b=>({...b,frequency:b.frequency||'month',startDate:b.startDate||dateKey(new Date())}));loaded.goals=loaded.goals||[];return loaded}catch{return clone(DEFAULT_STATE)}}
+function save(){localStorage.setItem('finpilot-v46',JSON.stringify(state));applyTheme();}
 function fmt(n){const sign=n<0?'-$':'$';return sign+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtSigned(n){return n>0?'+'+fmt(n):fmt(n)}
 function dateLabel(date){const d=new Date(date+'T12:00:00'); const today=new Date(); const y=d.getFullYear(),m=d.getMonth(),day=d.getDate(); if(y===today.getFullYear()&&m===today.getMonth()&&day===today.getDate()) return 'Today'; const yest=new Date(today); yest.setDate(today.getDate()-1); if(y===yest.getFullYear()&&m===yest.getMonth()&&day===yest.getDate()) return 'Yesterday'; return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:y!==today.getFullYear()?'numeric':undefined})}
@@ -259,6 +259,18 @@ function resetData(){if(!confirm('Reset FinPilot to a completely blank account? 
 window.addEventListener('resize',()=>{if(state.currentPage==='dashboard')drawCashFlow();if(state.currentPage==='networth')drawNetworth()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 render();
+
+function paycheckAvailable(paycheckId){
+  const p=state.paychecks.find(x=>Number(x.id)===Number(paycheckId));
+  if(!p) return 0;
+  const bills=(p.billIds||[]).map(Number).map(id=>state.bills.find(b=>Number(b.id)===id)).filter(Boolean)
+    .reduce((a,b)=>a+Number(b.amount||0),0);
+  const alloc=(p.allocations||[]).reduce((a,x)=>a+Number(x.amount||0),0);
+  const txs=state.transactions.filter(t=>Number(t.paycheckId)===Number(paycheckId));
+  const spent=txs.filter(t=>Number(t.amount)<0).reduce((a,t)=>a+Math.abs(Number(t.amount)),0);
+  const extra=txs.filter(t=>Number(t.amount)>0).reduce((a,t)=>a+Number(t.amount),0);
+  return Number(p.amount||0)-bills-alloc-spent+extra;
+}
 </script>
 </body>
 </html>
