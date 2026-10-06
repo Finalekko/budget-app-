@@ -74,8 +74,8 @@ let state=loadState();
 let activeFilters={query:'',category:'All'};
 const $=sel=>document.querySelector(sel);
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function loadState(){try{const raw=localStorage.getItem('finpilot-v4');const loaded=raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE);loaded.paychecks=(loaded.paychecks||[]).map(p=>({...p, billIds:p.billIds||[], allocations:p.allocations||[]}));loaded.bills=(loaded.bills||[]).map(b=>({...b,frequency:b.frequency||'month',startDate:b.startDate||dateKey(new Date())}));loaded.goals=loaded.goals||[];return loaded}catch{return clone(DEFAULT_STATE)}}
-function save(){localStorage.setItem('finpilot-v4',JSON.stringify(state));applyTheme();}
+function loadState(){try{const raw=localStorage.getItem('finpilot-v44');const loaded=raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE);loaded.paychecks=(loaded.paychecks||[]).map(p=>({...p, billIds:p.billIds||[], allocations:p.allocations||[]}));loaded.bills=(loaded.bills||[]).map(b=>({...b,frequency:b.frequency||'month',startDate:b.startDate||dateKey(new Date())}));loaded.goals=loaded.goals||[];return loaded}catch{return clone(DEFAULT_STATE)}}
+function save(){localStorage.setItem('finpilot-v44',JSON.stringify(state));applyTheme();}
 function fmt(n){const sign=n<0?'-$':'$';return sign+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtSigned(n){return n>0?'+'+fmt(n):fmt(n)}
 function dateLabel(date){const d=new Date(date+'T12:00:00'); const today=new Date(); const y=d.getFullYear(),m=d.getMonth(),day=d.getDate(); if(y===today.getFullYear()&&m===today.getMonth()&&day===today.getDate()) return 'Today'; const yest=new Date(today); yest.setDate(today.getDate()-1); if(y===yest.getFullYear()&&m===yest.getMonth()&&day===yest.getDate()) return 'Yesterday'; return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:y!==today.getFullYear()?'numeric':undefined})}
