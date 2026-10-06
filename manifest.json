@@ -1,9 +1,1 @@
-{
-  "name":"FinPilot — Personal Finance",
-  "short_name":"FinPilot",
-  "start_url":"./index.html",
-  "display":"standalone",
-  "background_color":"#f6f7fb",
-  "theme_color":"#635bff",
-  "icons":[]
-}
+{"name":"FinPilot","short_name":"FinPilot","start_url":"./","display":"standalone","background_color":"#f6f7fb","theme_color":"#635bff","icons":[]}
