@@ -74,8 +74,8 @@ let state=loadState();
 let activeFilters={query:'',category:'All'};
 const $=sel=>document.querySelector(sel);
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function loadState(){try{const raw=localStorage.getItem('finpilot-v48');const loaded=raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE);loaded.paychecks=(loaded.paychecks||[]).map(p=>({...p, billIds:p.billIds||[], allocations:p.allocations||[]}));loaded.bills=(loaded.bills||[]).map(b=>({...b,frequency:b.frequency||'month',startDate:b.startDate||dateKey(new Date())}));loaded.goals=loaded.goals||[];return loaded}catch{return clone(DEFAULT_STATE)}}
-function save(){localStorage.setItem('finpilot-v48',JSON.stringify(state));applyTheme();}
+function loadState(){try{const raw=localStorage.getItem('finpilot-v52')||localStorage.getItem('finpilot-v51')||localStorage.getItem('finpilot-v49')||localStorage.getItem('finpilot-v48');const loaded=raw?{...clone(DEFAULT_STATE),...JSON.parse(raw)}:clone(DEFAULT_STATE);loaded.paychecks=(loaded.paychecks||[]).map(p=>({...p, billIds:p.billIds||[], allocations:p.allocations||[]}));loaded.bills=(loaded.bills||[]).map(b=>({...b,frequency:b.frequency||'month',startDate:b.startDate||dateKey(new Date())}));loaded.goals=loaded.goals||[];return loaded}catch{return clone(DEFAULT_STATE)}}
+function save(){localStorage.setItem('finpilot-v52',JSON.stringify(state));applyTheme();}
 function fmt(n){const sign=n<0?'-$':'$';return sign+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtSigned(n){return n>0?'+'+fmt(n):fmt(n)}
 function dateLabel(date){const d=new Date(date+'T12:00:00'); const today=new Date(); const y=d.getFullYear(),m=d.getMonth(),day=d.getDate(); if(y===today.getFullYear()&&m===today.getMonth()&&day===today.getDate()) return 'Today'; const yest=new Date(today); yest.setDate(today.getDate()-1); if(y===yest.getFullYear()&&m===yest.getMonth()&&day===yest.getDate()) return 'Yesterday'; return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:y!==today.getFullYear()?'numeric':undefined})}
@@ -91,14 +91,17 @@ function periodSpend(){return periodTx().filter(t=>t.amount<0).reduce((s,t)=>s+M
 function normalizeCategory(c){return String(c||'').trim().toLowerCase()}
 function billOccurrencesInPeriod(b){const r=periodRange(),freq=b.frequency||'month',amount=Number(b.amount||0);if(!amount)return 0;let total=0;if(freq==='month'){let d=new Date(r.start.getFullYear(),r.start.getMonth(),Math.min(Number(b.dueDay)||1,new Date(r.start.getFullYear(),r.start.getMonth()+1,0).getDate()),12);if(d>=r.start&&d<=r.end)total+=amount;if(r.start.getMonth()!==r.end.getMonth()||r.start.getFullYear()!==r.end.getFullYear()){let d2=new Date(r.end.getFullYear(),r.end.getMonth(),Math.min(Number(b.dueDay)||1,new Date(r.end.getFullYear(),r.end.getMonth()+1,0).getDate()),12);if(d2>=r.start&&d2<=r.end)total+=amount}return total}const start=new Date((b.startDate||dateKey(r.start))+'T12:00:00'),step=freq==='biweek'?14:7;let first=new Date(start);while(first<r.start)first.setDate(first.getDate()+step);for(let d=new Date(first);d<=r.end;d.setDate(d.getDate()+step)){if(d>=r.start)total+=amount}return total}
 function periodBillSpendByCategory(category){
- const key=normalizeCategory(category),r=periodRange();
- return state.bills.filter(b=>normalizeCategory(b.category)===key).reduce((sum,b)=>{
-   const linkedChecks=state.paychecks.filter(p=>Array.isArray(p.billIds)&&p.billIds.some(id=>Number(id)===Number(b.id))&&inPeriod(p.date));
-   if(linkedChecks.length) return sum+linkedChecks.reduce((s,p)=>s+Number(b.amount||0),0);
-   return sum+billOccurrencesInPeriod(b);
- },0)
+ const key=normalizeCategory(category);
+ // A bill counts toward a budget ONLY when it is explicitly checked
+ // under "Bills to subtract from this check" on a paycheck.
+ return state.paychecks.filter(p=>inPeriod(p.date)).reduce((sum,p)=>{
+   return sum+paycheckBills(p)
+     .filter(b=>normalizeCategory(b.category)===key)
+     .reduce((s,b)=>s+Number(b.amount||0),0);
+ },0);
 }
-function periodSpendByCategory(category){const key=normalizeCategory(category);const txSpend=periodTx().filter(t=>t.amount<0&&normalizeCategory(t.category)===key).reduce((s,t)=>s+Math.abs(t.amount),0);return txSpend+periodBillSpendByCategory(category)}
+function periodSavingsSpendByCategory(category){const key=normalizeCategory(category);if(!key)return 0;return state.paychecks.filter(p=>inPeriod(p.date)).reduce((sum,p)=>sum+(p.allocations||[]).filter(a=>a.type==='savings').reduce((s,a)=>{const acc=state.accounts.find(x=>Number(x.id)===Number(a.accountId));const targetName=normalizeCategory(acc?.name||'');return s+(targetName===key||key==='savings'?Number(a.amount||0):0)},0),0)}
+function periodSpendByCategory(category){const key=normalizeCategory(category);const txSpend=periodTx().filter(t=>t.amount<0&&normalizeCategory(t.category)===key).reduce((s,t)=>s+Math.abs(t.amount),0);return txSpend+periodBillSpendByCategory(category)+periodSavingsSpendByCategory(category)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function categoryIcon(c){return ({Housing:'🏠',Food:'🍔',Transportation:'🚗',Shopping:'🛒',Fun:'🎮',Entertainment:'🎬',Travel:'✈️',Income:'💰',Utilities:'💡',Health:'❤️',Other:'💸'})[c]||'💸'}
 function accountName(id){return state.accounts.find(a=>a.id===Number(id))?.name||'Account'}
